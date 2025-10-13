@@ -1,0 +1,124 @@
+*{
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    box-sizing: border-box;
+}
+body{
+    background-color: #403f3f;
+}
+.singform{
+   margin: auto;
+   margin-top: 150px;
+  
+}
+
+.login{
+    /* background-color:#764ba2 ; */
+    background: linear-gradient(to right, #667eea, #764ba2);
+
+}
+.mag{
+  margin-top: 50px;
+}
+
+
+.ref-btn{
+  margin-left: 110px;
+}
+
+.requiredStar{
+    color: red;
+}
+
+.singbtn
+{
+    color: #764ba2;
+}
+
+
+/* for sing up */
+.singbtn{
+   color: #764ba2;
+}
+
+.signup{
+ background: linear-gradient(to right, #667eea, #764ba2);
+}
+
+.inputBox{
+        width: 100%;
+        height: 40px;
+      margin: 5px 0 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+}
+.tex{
+    font-size: larger;
+    font-weight: 500;
+
+}
+
+
+.social-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 50px;
+    margin: 10px 0;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #fff;
+    cursor: pointer;
+    text-decoration: none;
+    /* transition: background-color 0.3s; */
+  }
+  .google-btn {
+    background-color: #d9534f;
+  }
+  .google-btn:hover {
+    background-color: #c94642;
+  }
+  .apple-btn {
+    background-color:#09080a;
+  }
+  .apple-btn:hover {
+    background-color: #333;
+  }
+  .icon {
+    width: 25px;
+    height: 25px;
+    margin-right: 10px;
+  }
+
+/* for the notes */
+  .note{
+      font-size: smaller;
+      color: #c94642;
+  }
+
+
+
+  /*for the otp box design */
+
+
+/* Shake animation for wrong OTP */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+/* Glow animation for correct OTP */
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 0px green; }
+  50% { box-shadow: 0 0 8px 2px green; }
+}
+
+.animate-glow input {
+  animation: glow 0.8s ease-in-out;
+}

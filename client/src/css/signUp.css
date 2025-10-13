@@ -1,0 +1,102 @@
+/* for whole */
+* {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    box-sizing: border-box;
+}
+
+/* for body */
+body {
+    background-color: #403f3f;
+}
+.singbtn
+{
+    color: #764ba2;
+}
+
+.emailIcon{
+    font-size: large;
+}
+/* for form */
+.singupform {
+    margin: auto;
+    margin-top: 30px;
+    width: 33%;
+    margin-top: 1px;
+}
+
+/* for requiredStar */
+.requiredStar {
+    color: red;
+}
+
+/* for signUp button */
+.signup {
+    background: linear-gradient(to right, #667eea, #764ba2);
+}
+
+/* for email input */
+.emailinput {
+    width: 100%;
+    height: 40px;
+    margin: 5px 0 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+}
+
+/* for text */
+.tex {
+    font-size: larger;
+    font-weight: 500;
+}
+
+/* for social buttons */
+.social-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 40px;
+    margin: 10px 0;
+    border-radius: 5px;
+    font-size: 15px;
+    font-weight: bold;
+    color: #fff;
+    cursor: pointer;
+    text-decoration: none;
+    /* transition: background-color 0.3s; */
+}
+
+.google-btn {
+    background-color: #d9534f;
+}
+
+.google-btn:hover {
+    background-color: #c94642;
+}
+
+.apple-btn {
+    background-color: #000;
+}
+
+.apple-btn:hover {
+    background-color: #333;
+}
+.facebook-btn{
+    background: #ac4c22;
+   
+}
+.facebook-btn:hover{
+    background: #df8158;
+}
+
+.icon {
+    width: 25px;
+    height: 25px;
+    margin-right: 10px;
+}
+
+/* for the notes */
+.note {
+    font-size: smaller;
+    color: #c94642;
+}

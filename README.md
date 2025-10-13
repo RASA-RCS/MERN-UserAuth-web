@@ -94,7 +94,7 @@ cd ../client
 npm install
 ```
 
-### 3️⃣ Start the App
+### 3️⃣ Start the web
 #### Run Backend
 ```bash
 cd server
@@ -310,6 +310,7 @@ expiresAt
 | `POST` | `/api/auth/users/logout-all` | Logout all sessions |
 | `POST` | `/api/auth/google` | Google login |
 | `POST` | `/api/auth/facebook` | Facebook login |
+
 
 
 

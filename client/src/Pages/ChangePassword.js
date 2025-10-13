@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "../Services/axiosInterceptor";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import "./ForgotPassword.css";
+import "../css/ForgotPassword.css";
 import "../css/signIn.css"
 
 const ChangePassword = () => {

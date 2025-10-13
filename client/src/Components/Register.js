@@ -152,7 +152,7 @@ const Register = () => {
         localStorage.setItem("token", response.data.token);
         localStorage.setItem("name", response.data.user?.Fname || user.displayName);
         toast.success("Registered successfully! Please login.");
-        navigate("/home");
+        navigate("/");
       }
     } catch (err) {
       if (err.code === "auth/popup-closed-by-user") {

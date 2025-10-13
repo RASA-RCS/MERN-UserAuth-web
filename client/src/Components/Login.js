@@ -12,7 +12,7 @@ import {
 } from "firebase/auth";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import refreshIcon from "./refresh-removebg-preview.png";
+import refreshIcon from "../images/refresh-removebg-preview.png";
 import emailicon from '../images/tl.webp';
 import pwd from "../images/password-76.png";
 import audios from "../sound/success-340660.mp3";

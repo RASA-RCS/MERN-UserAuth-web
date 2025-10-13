@@ -3,7 +3,8 @@ import axios from "../Services/axiosInterceptor";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
-import "./ForgotPassword.css";
+
+import "../css/ForgotPassword.css"
 import "../css/signIn.css";
 import audios from "../sound/iphone_16_messege_tone.mp3"; 
 

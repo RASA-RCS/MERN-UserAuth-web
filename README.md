@@ -19,6 +19,7 @@ A full-featured **User Authentication System** built using the **MERN stack**, i
   - [Session Management](#session-management)
   - [Logout](#-logout)
 - [ER Diagram](#er-diagram)
+- 
 - [API Endpoints](#-api-endpoints)
 
 
@@ -147,7 +148,6 @@ user-authentication-system/
 │   │   ├── Pages/
 │   │   │   ├── ChangePassword.js
 │   │   │   ├── forgotDuplicate.js
-│   │   │   ├── ForgotPassword.js
 │   │   │   ├── ForgotPassword.js
 │   │   │   └── SessionExpired.js
 │   │   ├── Images/
@@ -295,6 +295,8 @@ expiresAt
 | expiresAt      |
 +----------------+
 ```
+##uml diagram  
+<img width="1024" height="1536" alt="workFlowImage Oct 9, 2025, 11_49_29 AM" src="https://github.com/user-attachments/assets/7c699761-782f-4c8a-8ffe-b9feea739241" />
 
 ---
 
@@ -310,6 +312,7 @@ expiresAt
 | `POST` | `/api/auth/users/logout-all` | Logout all sessions |
 | `POST` | `/api/auth/google` | Google login |
 | `POST` | `/api/auth/facebook` | Facebook login |
+
 
 
 

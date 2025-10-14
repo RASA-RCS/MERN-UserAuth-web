@@ -17,7 +17,7 @@ const Home = () => {
   const [timeLeft, setTimeLeft] = useState(null);
   const logoutTimer = useRef(null);
   const toastShown = useRef(false);
-  const INACTIVITY_LIMIT = 2 * 60 * 1000; // 5 minutes
+  const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutes
 
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [logoutCountdown, setLogoutCountdown] = useState(10);

@@ -120,7 +120,7 @@ const Register = () => {
           localStorage.setItem("token", res.data.token);
           localStorage.setItem("name", res.data.user.Fname);
           toast.success("Login successful!");
-          navigate("/login");
+          navigate("/");
         }
       }
     } catch (error) {

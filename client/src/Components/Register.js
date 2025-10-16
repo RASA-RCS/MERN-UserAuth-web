@@ -23,7 +23,7 @@ import {
 } from "firebase/auth";
 
 
-//for the register input data and send to the backend 
+//------------------ Input data and send to the Backend ---------
 const Register = () => {
   const navigate = useNavigate();
   const [input, setInput] = useState({
@@ -44,25 +44,33 @@ const Register = () => {
 
   // -------------------- Validation --------------------
   const validate = () => {
+
+    //-----validate the FName --------------
     if (!/^[A-Za-z]+$/.test(input.Fname))
       return "First name should only contain letters";
-    if (!/^[A-Za-z]+$/.test(input.Lname))
-      return "Last name should only contain letters";
 
+    //-----validate the MName --------------
     if (input.Mname && !/^[A-Za-z]+$/.test(input.Mname)) {
       return "Middle name should only contain letters";
     }
+    //-----validate the LName --------------
+    if (!/^[A-Za-z]+$/.test(input.Lname))
+      return "Last name should only contain letters";
+
+    //-----validate the Phone --------------
     if (!/^\d+$/.test(input.phone))
       return "Phone number should contain only digits";
+    //-----validate the Phone --------------
     if (input.phone.length !== 10)
       return "Phone number must be 10 digits";
-
+    //-----validate the Email --------------
     const emailRegex = /^[A-Za-z][A-Za-z0-9._%+-]*@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
     if (!emailRegex.test(input.email))
       return "Invalid email format (must start with a letter and be a valid email)";
+    //-----validate the Password --------------
     if (input.password !== input.confirmPassword)
       return "Passwords do not match";
-
+    //-----validate the Conform Password --------------
     const passwordRegex =
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!passwordRegex.test(input.password)) {
@@ -73,7 +81,7 @@ const Register = () => {
   };
 
 
-  //for the sound 
+  //------For the Paly Sond Notifaction-------
   const playSingUpSound = () => {
     try {
       const VerifyEmail = new Audio(audios); //  use imported audio
@@ -97,7 +105,7 @@ const Register = () => {
 
     setError("");
     try {
-      //send to the data base 
+      //--------------Send to the data-base----------- 
       const response = await axios.post("api/auth/users/register", input);
       if (response.status === 201) {
         playSingUpSound();  //method for when the sent the email the sound to be popup

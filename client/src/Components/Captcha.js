@@ -8,6 +8,8 @@ import React, { useState, useEffect, useRef } from "react";
 const Captcha = ({ code, onChange }) => {
   const canvasRef = useRef(null);
 
+
+  //draw the capture box
   const drawCaptcha = (text) => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");

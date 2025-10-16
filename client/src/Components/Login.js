@@ -63,7 +63,7 @@ const Login = () => {
   };
 
 
-
+//-----Random OTP generate------------
   const [randomCode, setRandomCode] = useState(generateRandomCode());
   const [userCode, setUserCode] = useState("");
 

@@ -1,3 +1,9 @@
+//  Copyright (c) [2025] [Rasa Consultancy Services]. All rights reserved. 
+//  This software is the confidential and proprietary information of [Rasa Consultancy Services]. 
+//  You shall not disclose such confidential information and shall use it only in accordance 
+//with the terms of the license agreement you entered into with [Rasa Consultancy Services].
+//  For more information, please contact: [Your Company Email/Legal Department Contact] 
+
 import React, { useState } from "react";
 import axios from "../Services/axiosInterceptor";
 import "../css/signUp.css";
@@ -16,6 +22,8 @@ import {
   fetchSignInMethodsForEmail,
 } from "firebase/auth";
 
+
+//for the register input data and send to the backend 
 const Register = () => {
   const navigate = useNavigate();
   const [input, setInput] = useState({
@@ -28,11 +36,11 @@ const Register = () => {
     confirmPassword: "",
   });
 
-  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);   //for the password visible
   const [error, setError] = useState("");
   const [popupLoading, setPopupLoading] = useState(false);
 
-  const facebookProvider = new FacebookAuthProvider();
+  const facebookProvider = new FacebookAuthProvider();    //for the Facebook
 
   // -------------------- Validation --------------------
   const validate = () => {
@@ -64,6 +72,8 @@ const Register = () => {
     return "";
   };
 
+
+  //for the sound 
   const playSingUpSound = () => {
     try {
       const VerifyEmail = new Audio(audios); //  use imported audio
@@ -87,9 +97,10 @@ const Register = () => {
 
     setError("");
     try {
+      //send to the data base 
       const response = await axios.post("api/auth/users/register", input);
       if (response.status === 201) {
-        playSingUpSound();
+        playSingUpSound();  //method for when the sent the email the sound to be popup
         toast.success("User Registered successfully! Please Verify your Email");
         setTimeout(() => navigate("/login"), 3000);
       }
@@ -105,6 +116,8 @@ const Register = () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
+
+      //send the data in to the database form fetch form the google
       const res = await axios.post("api/auth/users/google-login", {
         uid: user.uid,
         email: user.email,
@@ -140,7 +153,7 @@ const Register = () => {
     try {
       const result = await signInWithPopup(auth, facebookProvider);
       const user = result.user;
-
+      //send the data in to the database form fetch form the facebook
       const response = await axios.post("/api/auth/users/facebook-login", {
         email: user.email,
         uid: user.uid,
@@ -339,7 +352,7 @@ const Register = () => {
 
         {/* Social Buttons */}
         <p className="text-center my-3">Or</p>
-
+        {/* Google button  */}
         <button
           onClick={googleSign}
           className="social-button google-btn w-full mt-2 flex items-center justify-center gap-2"
@@ -351,7 +364,7 @@ const Register = () => {
           />
           Continue with Google
         </button>
-
+        {/* facebook button  */}
         <button
           onClick={facebookSign}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded flex items-center justify-center gap-2 mb-2 text-sm sm:text-base"

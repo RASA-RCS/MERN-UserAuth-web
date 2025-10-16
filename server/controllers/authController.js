@@ -1,75 +1,107 @@
 //  Copyright (c) [2025] [Rasa Consultancy Services]. All rights reserved. 
 //  This software is the confidential and proprietary information of [Rasa Consultancy Services]. 
 //  You shall not disclose such confidential information and shall use it only in accordance 
-//with the terms of the license agreement you entered into with [Rasa Consultancy Services].
+//  with the terms of the license agreement you entered into with [Rasa Consultancy Services].
 //  For more information, please contact: [Your Company Email/Legal Department Contact] 
+
+// Import the User authentication model (Mongoose schema for users)
 import authModel from "../models/authModel.js";
+
+// Import nodemailer to send emails from Node.js
 import nodemailer from "nodemailer";
+
+// Import bcryptjs to hash and compare passwords securely
 import bcryptjs from "bcryptjs";
+
+// Import jsonwebtoken to create and verify JWT tokens
 import jwt from "jsonwebtoken";
+
+// Import custom function to send emails to users
 import { sendEmailtoUser } from "../config/EmailTemplate.js";
 
 
 // ---------------- Helper: Send OTP ----------------
 const sendOtpEmail = async (email, otp) => {
+  // Create a transporter object using Gmail SMTP
+  // This object will handle sending emails
   const transport = nodemailer.createTransport({
-    service: "gmail",
+    service: "gmail", // Using Gmail as email service provider
     auth: {
-      user: process.env.EMAIL,
-      pass: process.env.EMAIL_PASSWORD,
+      user: process.env.EMAIL, // Sender email address from environment variables
+      pass: process.env.EMAIL_PASSWORD, // Sender email password from environment variables
     },
   });
 
+ // Define the email options
   const mailOptions = {
-    from: process.env.EMAIL,
-    to: email,
-    subject: "Your Login OTP Code",
-    text: `Your OTP for login is: ${otp}. It is valid for 5 minutes.`,
-    html: `<p>Your OTP for login is:</p><h2>${otp}</h2><p>It will expire in 5 minutes.</p>`,
+    from: process.env.EMAIL, // Sender email address
+    to: email, // Recipient email address
+    subject: "Your Login OTP Code", // Subject of the email
+    text: `Your OTP for login is: ${otp}. It is valid for 5 minutes.`, // Plain text version of the email
+    html: `<p>Your OTP for login is:</p><h2>${otp}</h2><p>It will expire in 5 minutes.</p>`, // HTML version of the email
   };
 
+  // Send the email using the transporter
+  // This returns a promise, so we await it
   await transport.sendMail(mailOptions);
 };
 
 class authController {
 
-  // -------------------- User Registration --------------------
- static userRegistration = async (req, res) => {
+// -------------------- User Registration --------------------
+
+/**
+ * Registers a new user.
+ * Validates required fields, hashes password, generates verification token,
+ * sends email verification link, and saves user to database.
+ *
+ * @param {Object} req - Express request object containing user data in req.body
+ * @param {Object} res - Express response object to send back status and messages
+ */
+static userRegistration = async (req, res) => {
+  // Destructure incoming user data from request body
   const { Fname, Mname, Lname, phone, email, password } = req.body;
 
   try {
-    // Middle name is optional, so remove it from the required check
+    // -------------------- Required Field Validation --------------------
+    // Middle name (Mname) is optional, others are required
     if (Fname && Lname && phone && email && password) {
+      
+      // Check if a user with the same email already exists in DB
       const isUser = await authModel.findOne({ email: email });
       if (isUser) {
         return res.status(400).json({ message: "User already exists" });
       } else {
-        // Password Hashing
-        const genSalt = await bcryptjs.genSalt(10);
-        const hashedPassword = await bcryptjs.hash(password, genSalt);
+        // -------------------- Password Hashing --------------------
+        const genSalt = await bcryptjs.genSalt(10); // Generate salt for hashing
+        const hashedPassword = await bcryptjs.hash(password, genSalt); // Hash the password
 
-        // Generate Token
-        const secretKey = "amarjeetGupta";
+        // -------------------- Token Generation --------------------
+        const secretKey = "amarjeetGupta"; // Secret key for JWT
         const token = jwt.sign({ email: email }, secretKey, {
-          expiresIn: "10m",
+          expiresIn: "10m", // Token expires in 10 minutes
         });
 
-        const link = `http://localhost:9000/api/auth/verify/${token}`;
-        sendEmailtoUser(link, email);
+        // -------------------- Verification Link --------------------
+        const link = `http://localhost:9000/api/auth/verify/${token}`; // Construct verification link
+        sendEmailtoUser(link, email); // Send verification email
 
-        // Save the user
+        // -------------------- Save New User --------------------
         const newUser = authModel({
-          Fname,
-          Mname: Mname || "", // store empty string if not provided
-          Lname,
-          phone,
-          email,
-          password: hashedPassword,
-          isVerified: false,
+          Fname,                   // First Name
+          Mname: Mname || "",      // Middle Name (optional)
+          Lname,                   // Last Name
+          phone,                   // Phone number
+          email,                   // Email
+          password: hashedPassword, // Store hashed password
+          isVerified: false,       // User is not verified until email confirmation
         });
 
+        // Save the user to database
         const resUser = await newUser.save();
+
         if (resUser) {
+          // Return success response
           return res.status(201).json({
             message: "Registered Successfully. Please verify your email",
             user: resUser,
@@ -77,387 +109,622 @@ class authController {
         }
       }
     } else {
+      // If required fields are missing, return error
       return res.status(400).json({ message: "All required fields are mandatory" });
     }
   } catch (error) {
+    // Catch and return any errors
     return res.status(400).json({ message: error.message });
   }
 };
 
+
  
-// ---------------- Logout Email Notification ----------------
+// -------------------- Logout Email Notification --------------------
+
+/**
+ * Sends a logout notification email to the user.
+ * Notifies the user that their account has been successfully logged out.
+ *
+ */
 static sendLogoutEmail = async (req, res) => {
+  // Destructure email and name from request body
   const { email, name } = req.body;
 
+  // -------------------- Validation --------------------
+  // Ensure email is provided
   if (!email) return res.status(400).json({ message: "Email is required" });
 
   try {
-    // Reuse OTP transporter
+    // -------------------- Create Transporter --------------------
+    // Using nodemailer to send email
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      service: "gmail", // Email service provider
       auth: {
-        user: process.env.EMAIL,          // same as OTP email
-        pass: process.env.EMAIL_PASSWORD, // same as OTP email
+        user: process.env.EMAIL,          // Sender email (from environment variable)
+        pass: process.env.EMAIL_PASSWORD, // Email password (from environment variable)
       },
     });
 
+    // -------------------- Configure Email --------------------
     const mailOptions = {
-      from: process.env.EMAIL,
-      to: email,
-      subject: "Logout Successful",
-      text: `Hello ${name || "User"},\nYour account has been logged out successfully.`,
+      from: process.env.EMAIL,           // Sender email
+      to: email,                         // Recipient email
+      subject: "Logout Successful",      // Email subject line
+      text: `Hello ${name || "User"},\nYour account has been logged out successfully.`, // Plain text version
       html: `<p>Hello <strong>${name || "User"}</strong>,</p>
-             <p>Your account has been <strong>logged out successfully</strong>.</p>`,
+             <p>Your account has been <strong>logged out successfully</strong>.</p>`, // HTML version
     };
 
-    await transporter.sendMail(mailOptions);
+    // -------------------- Send Email --------------------
+    await transporter.sendMail(mailOptions); // Send the email
 
-    console.log(`✅ Logout email sent successfully for: ${email}`);
-    return res.status(200).json({ success: true, message: "Logout email sent" });
+    console.log(`✅ Logout email sent successfully for: ${email}`); // Log success
+    return res.status(200).json({ success: true, message: "Logout email sent" }); // Respond to client
 
   } catch (error) {
-    console.error("❌ Error sending logout email:", error);
-    return res.status(500).json({ success: false, message: "Failed to send email" });
+    // -------------------- Error Handling --------------------
+    console.error("❌ Error sending logout email:", error); // Log the error
+    return res.status(500).json({ success: false, message: "Failed to send email" }); // Respond with failure
   }
 };
 
 
-  // -------------------- Facebook Login --------------------
-  static facebookLogin = async (req, res) => {
-    try {
-      const { uid, email, name, photoURL } = req.body;
-      if (!uid || !email) return res.status(400).json({ message: "Invalid Facebook data" });
 
-      let user = await authModel.findOne({ email });
+// -------------------- Facebook Login --------------------
 
-      // Create new user if not exists
-      if (!user) {
-        const [Fname, ...rest] = name?.split(" ") || ["User"];
-        const Lname = rest.length ? rest.join(" ") : "Unknown";
-        user = new authModel({
-          Fname,
-          
-          Lname,
-          email,
-          facebookId: uid,
-          photoURL,
-          isVerified: true,
-          sessions: [],
-          lastLoginMethod: "Facebook",
-        });
-      }
-      else {
-        user.facebookId = uid;
-        user.lastLoginMethod = "Facebook"; // <-- update last login
-      }
-      await user.save();
-
-
-      const token = jwt.sign({ userID: user._id }, "amarjeetKumar", { expiresIn: "2d" });
-
-      // Single-device enforcement
-      if (user.activeSessionCount() > 0) {
-        return res.status(200).json({ forceLogout: true, token });
-      }
-
-      // Add current session
-      user.sessions.push({
-        token,
-        userAgent: req.headers["user-agent"],
-        ip: req.ip,
-        lastActivity: new Date(),
-        expiresAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-      });
-
-      await user.save();
-      return res.status(200).json({ token, user });
-    } catch (error) {
-      return res.status(500).json({ message: error.message });
-    }
-  };
-
-
-  // -------------------- Email Login: Step 1 - Send OTP --------------------
-  static userLogin = async (req, res) => {
-    const { email, password } = req.body;
-    try {
-      if (!email || !password)
-        return res.status(400).json({ message: "All fields are required" });
-
-      const user = await authModel.findOne({ email });
-      if (!user) return res.status(400).json({ message: "User not registered!" });
-      if (!user.isVerified)
-        return res.status(400).json({ message: "Email verification pending" });
-
-      // Account lock check
-      if (user.lockUntil && user.lockUntil > Date.now()) {
-        const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / (60 * 1000));
-        return res.status(403).json({ message: `Too many Failed Attempts. Your Account is Temporarily locked for  in ${minutesLeft} min.` });
-      }
-
-      // Password check
-      const isMatch = await bcryptjs.compare(password, user.password);
-
-
-
-      if (!isMatch) {
-        user.loginAttempts = (user.loginAttempts || 0) + 1;
-        if (user.loginAttempts >= 4) {
-          user.lockUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 min lock
-        }
-        await user.save();
-        return res.status(400).json({ message: `Invalid credentials! (${user.loginAttempts || 0}/5 attempts)` });
-      }
-
-
-      // Update lastLoginMethod
-      user.lastLoginMethod = "Email/Password";
-      await user.save();
-
-      // Reset login attempts
-      user.loginAttempts = 0;
-      user.lockUntil = null;
-
-      // Generate OTP
-      const otp = Math.floor(100000 + Math.random() * 900000);
-      user.loginOtp = otp;
-      user.loginOtpExpiry =  Date.now() + 5 * 60 * 1000; // 5 min
-      user.loginAttempts = 0;
-      await user.save();
-
-      await sendOtpEmail(email, otp);
-      return res.status(200).json({ otpSent: true, email: user.email });
-
-    } catch (error) {
-      return res.status(500).json({ message: error.message });
-    }
-  };
-
-  // -------------------- Verify OTP: Step 2 - Complete Login --------------------
-  static verifyLoginOtp = async (req, res) => {
-    const { email, otp } = req.body;
-    try {
-      if (!email || !otp) return res.status(400).json({ message: "Email and OTP are required" });
-
-      const user = await authModel.findOne({ email });
-      if (!user) return res.status(400).json({ message: "User not found" });
-
-      if (!user.loginOtp || !user.loginOtpExpiry)
-        return res.status(400).json({ message: "OTP not requested" });
-      if (Date.now() > new Date(user.loginOtpExpiry).getTime())
-        return res.status(400).json({ message: "OTP expired" });
-      if (otp.toString() !== user.loginOtp.toString()) return res.status(400).json({ message: "Invalid OTP" });
-
-      // Clear OTP
-      user.loginOtp = null;
-      user.loginOtpExpiry = null;
-
-      const token = jwt.sign({ userID: user._id }, "amarjeetKumar", { expiresIn: "2d" });
-
-
-
-      // Device enforcement: check existing sessions
-      user.sessions = user.sessions.filter(
-        sess => new Date(sess.expiresAt) > new Date()
-      );
-
-      if (user.sessions.length > 0) {
-        return res.status(200).json({ forceLogout: true, token });
-      }
-
-      user.sessions.push({
-        token,
-        userAgent: req.headers["user-agent"],
-        ip: req.ip,
-        lastActivity: new Date(),
-        expiresAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-      });
-      await user.save();
-
-      // return res.status(200).json({ token, user });
-      return res.json({ token, user: { Fname: user.Fname, email: user.email }, lastLoginMethod: user.lastLoginMethod });
-
-    } catch (error) {
-      return res.status(500).json({ message: error.message });
-    }
-  };
-
-  // -------------------- Google Login --------------------
-  static googleLogin = async (req, res) => {
+/**
+ * Handles Facebook login for users.
+ * If user exists, updates Facebook ID and last login method.
+ * If user does not exist, creates a new user with Facebook credentials.
+ * Generates JWT token and manages sessions.
+ */
+static facebookLogin = async (req, res) => {
+  try {
+    // -------------------- Destructure request body --------------------
     const { uid, email, name, photoURL } = req.body;
-    if (!email || !uid) return res.status(400).json({ message: "Invalid Google data" });
 
-    try {
-      let user = await authModel.findOne({ email });
-      if (!user) {
-        const [Fname, ...rest] = name?.split(" ") || ["User"];
-        const Lname = rest.length ? rest.join(" ") : "Unknown";
-        user = new authModel({
-          Fname,
-          Lname,
-          email,
-          googleId: uid,
-          photoURL,
-          lastLoginMethod: "Google",
-          isVerified: true,
-          sessions: [],
-        });
-      } else {
-        // Existing user, update Google ID if missing
-        user.googleId = uid;
-        user.lastLoginMethod = "Google"; // <-- update last login
+    // Validate Facebook data
+    if (!uid || !email) 
+      return res.status(400).json({ message: "Invalid Facebook data" });
+
+    // -------------------- Find existing user --------------------
+    let user = await authModel.findOne({ email });
+
+    // -------------------- Create new user if not exists --------------------
+    if (!user) {
+      // Split full name into first and last names
+      const [Fname, ...rest] = name?.split(" ") || ["User"];
+      const Lname = rest.length ? rest.join(" ") : "Unknown";
+
+      // Create new user document
+      user = new authModel({
+        Fname,                // First name
+        Lname,                // Last name
+        email,                // User email
+        facebookId: uid,      // Facebook UID
+        photoURL,             // Profile picture URL
+        isVerified: true,     // Automatically verified via OAuth
+        sessions: [],         // Initialize empty sessions array
+        lastLoginMethod: "Facebook", // Record last login method
+      });
+    } else {
+      // -------------------- Update existing user --------------------
+      user.facebookId = uid;              // Update Facebook UID
+      user.lastLoginMethod = "Facebook";  // Update last login method
+    }
+
+    // Save user to database
+    await user.save();
+
+    // -------------------- Generate JWT Token --------------------
+    const token = jwt.sign(
+      { userID: user._id },       // Payload
+      "amarjeetKumar",            // Secret key (should be moved to env variable)
+      { expiresIn: "2d" }         // Token expiration
+    );
+
+    // -------------------- Single-device enforcement --------------------
+    // If user already has an active session, force logout
+    if (user.activeSessionCount() > 0) {
+      return res.status(200).json({ forceLogout: true, token });
+    }
+
+    // -------------------- Add current session --------------------
+    user.sessions.push({
+      token,                                   // JWT token for this session
+      userAgent: req.headers["user-agent"],    // Browser / device info
+      ip: req.ip,                               // Client IP address
+      lastActivity: new Date(),                // Timestamp of session creation
+      expiresAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days expiry
+    });
+
+    // Save updated user with session
+    await user.save();
+
+    // -------------------- Response --------------------
+    return res.status(200).json({ token, user });
+
+  } catch (error) {
+    // -------------------- Error Handling --------------------
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+
+// -------------------- Google Login --------------------
+
+/**
+ * Handles Google login for users.
+ * If user exists, updates Google ID and last login method.
+ * If user does not exist, creates a new user with Google credentials.
+ * Generates JWT token and manages sessions.
+ *
+ * @param {Object} req - Express request object containing uid, email, name, photoURL
+ * @param {Object} res - Express response object to send back status and data
+ */
+static googleLogin = async (req, res) => {
+  // -------------------- Destructure request body --------------------
+  const { uid, email, name, photoURL } = req.body;
+
+  // Validate Google data
+  if (!email || !uid) 
+    return res.status(400).json({ message: "Invalid Google data" });
+
+  try {
+    // -------------------- Find existing user --------------------
+    let user = await authModel.findOne({ email });
+
+    // -------------------- Create new user if not exists --------------------
+    if (!user) {
+      // Split full name into first and last names
+      const [Fname, ...rest] = name?.split(" ") || ["User"];
+      const Lname = rest.length ? rest.join(" ") : "Unknown";
+
+      // Create new user document
+      user = new authModel({
+        Fname,                // First name
+        Lname,                // Last name
+        email,                // User email
+        googleId: uid,        // Google UID
+        photoURL,             // Profile picture URL
+        lastLoginMethod: "Google", // Record last login method
+        isVerified: true,     // Automatically verified via OAuth
+        sessions: [],         // Initialize empty sessions array
+      });
+    } else {
+      // -------------------- Update existing user --------------------
+      user.googleId = uid;              // Update Google UID
+      user.lastLoginMethod = "Google";  // Update last login method
+    }
+
+    // Save user to database
+    await user.save();
+
+    // -------------------- Generate JWT Token --------------------
+    const token = jwt.sign(
+      { userID: user._id },      // Payload contains user ID
+      "amarjeetKumar",           // Secret key (should be stored in env variable)
+      { expiresIn: "2d" }        // Token valid for 2 days
+    );
+
+    // -------------------- Single-device enforcement --------------------
+    // If user already has any active session, force logout
+    if (user.sessions.length > 0) {
+      return res.status(200).json({ forceLogout: true, token });
+    }
+
+    // -------------------- Add current session --------------------
+    user.sessions.push({
+      token,                                   // JWT token for this session
+      userAgent: req.headers["user-agent"],    // Browser / device info
+      ip: req.ip,                               // Client IP address
+      lastActivity: new Date(),                // Timestamp of session creation
+      expiresAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days expiry
+    });
+
+    // Save updated user with new session
+    await user.save();
+
+    // -------------------- Response --------------------
+    return res.status(200).json({ token, user });
+
+  } catch (error) {
+    // -------------------- Error Handling --------------------
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+
+
+ // -------------------- Email Login: Step 1 - Send OTP --------------------
+
+/**
+ * Handles email + password login (Step 1).
+ * Validates user credentials, checks account lock, generates OTP, and sends it via email.
+ *
+ * @param {Object} req - Express request object containing email and password
+ * @param {Object} res - Express response object to send back status and data
+ */
+static userLogin = async (req, res) => {
+  // -------------------- Destructure request body --------------------
+  const { email, password } = req.body;
+
+  try {
+    // -------------------- Validate input --------------------
+    if (!email || !password)
+      return res.status(400).json({ message: "All fields are required" });
+
+    // -------------------- Find user by email --------------------
+    const user = await authModel.findOne({ email });
+    if (!user) 
+      return res.status(400).json({ message: "User not registered!" });
+
+    // -------------------- Check email verification --------------------
+    if (!user.isVerified)
+      return res.status(400).json({ message: "Email verification pending" });
+
+    // -------------------- Check account lock --------------------
+    if (user.lockUntil && user.lockUntil > Date.now()) {
+      const minutesLeft = Math.ceil((user.lockUntil - Date.now()) / (60 * 1000));
+      return res.status(403).json({ 
+        message: `Too many failed attempts. Your account is temporarily locked for ${minutesLeft} min.` 
+      });
+    }
+
+    // -------------------- Password validation --------------------
+    const isMatch = await bcryptjs.compare(password, user.password);
+
+    if (!isMatch) {
+      // Increment login attempts
+      user.loginAttempts = (user.loginAttempts || 0) + 1;
+
+      // Lock account if too many failed attempts
+      if (user.loginAttempts >= 4) {
+        user.lockUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 min lock
       }
 
       await user.save();
-
-      const token = jwt.sign({ userID: user._id }, "amarjeetKumar", { expiresIn: "2d" });
-
-      // Device enforcement
-      if (user.sessions.length > 0) return res.status(200).json({ forceLogout: true, token });
-
-      user.sessions.push({
-        token,
-        userAgent: req.headers["user-agent"],
-        ip: req.ip,
-        lastActivity: new Date(),
-        expiresAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+      return res.status(400).json({ 
+        message: `Invalid credentials! (${user.loginAttempts || 0}/5 attempts)` 
       });
-      await user.save();
-
-      return res.status(200).json({ token, user });
-    } catch (error) {
-      return res.status(500).json({ message: error.message });
     }
-  };
+
+    // -------------------- Update last login method --------------------
+    user.lastLoginMethod = "Email/Password";
+    await user.save();
+
+    // -------------------- Reset login attempts --------------------
+    user.loginAttempts = 0;
+    user.lockUntil = null;
+
+    // -------------------- Generate OTP --------------------
+    const otp = Math.floor(100000 + Math.random() * 900000); // 6-digit OTP
+    user.loginOtp = otp;                                      // Store OTP
+    user.loginOtpExpiry = Date.now() + 5 * 60 * 1000;         // OTP valid for 5 minutes
+    user.loginAttempts = 0;                                   // Reset login attempts
+    await user.save();
+
+    // -------------------- Send OTP via email --------------------
+    await sendOtpEmail(email, otp);
+
+    // -------------------- Response --------------------
+    return res.status(200).json({ otpSent: true, email: user.email });
+
+  } catch (error) {
+    // -------------------- Error handling --------------------
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+
+ // -------------------- Verify OTP: Step 2 - Complete Login --------------------
+
+/**
+ * Handles OTP verification for email login (Step 2).
+ * Validates OTP, clears it upon success, creates JWT, and manages sessions.
+ *
+ * @param {Object} req - Express request object containing email and otp
+ * @param {Object} res - Express response object to send back status and data
+ */
+static verifyLoginOtp = async (req, res) => {
+  // -------------------- Destructure request body --------------------
+  const { email, otp } = req.body;
+
+  try {
+    // -------------------- Validate input --------------------
+    if (!email || !otp) 
+      return res.status(400).json({ message: "Email and OTP are required" });
+
+    // -------------------- Find user by email --------------------
+    const user = await authModel.findOne({ email });
+    if (!user) 
+      return res.status(400).json({ message: "User not found" });
+
+    // -------------------- Check if OTP was requested --------------------
+    if (!user.loginOtp || !user.loginOtpExpiry)
+      return res.status(400).json({ message: "OTP not requested" });
+
+    // -------------------- Check if OTP is expired --------------------
+    if (Date.now() > new Date(user.loginOtpExpiry).getTime())
+      return res.status(400).json({ message: "OTP expired" });
+
+    // -------------------- Validate OTP --------------------
+    if (otp.toString() !== user.loginOtp.toString())
+      return res.status(400).json({ message: "Invalid OTP" });
+
+    // -------------------- Clear OTP fields --------------------
+    user.loginOtp = null;
+    user.loginOtpExpiry = null;
+
+    // -------------------- Generate JWT token --------------------
+    const token = jwt.sign(
+      { userID: user._id }, 
+      "amarjeetKumar",               // Secret key
+      { expiresIn: "2d" }            // Token valid for 2 days
+    );
+
+    // -------------------- Device enforcement: remove expired sessions --------------------
+    user.sessions = user.sessions.filter(
+      sess => new Date(sess.expiresAt) > new Date()  // keep only active sessions
+    );
+
+    // -------------------- Force logout if other active sessions exist --------------------
+    if (user.sessions.length > 0) {
+      return res.status(200).json({ forceLogout: true, token });
+    }
+
+    // -------------------- Add current session --------------------
+    user.sessions.push({
+      token,                                       // JWT token
+      userAgent: req.headers["user-agent"],       // Device/browser info
+      ip: req.ip,                                 // Login IP
+      lastActivity: new Date(),                   // Timestamp of activity
+      expiresAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days expiry
+    });
+
+    // -------------------- Save user with new session --------------------
+    await user.save();
+
+    // -------------------- Response: return token and basic user info --------------------
+    return res.json({ 
+      token, 
+      user: { Fname: user.Fname, email: user.email }, 
+      lastLoginMethod: user.lastLoginMethod 
+    });
+
+  } catch (error) {
+    // -------------------- Error handling --------------------
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 
   // -------------------- Force Logout Previous Session --------------------
-  static forceLogout = async (req, res) => {
-    const { token, email } = req.body;
-    try {
-      const user = await authModel.findOne({ email });
-      if (!user) return res.status(400).json({ message: "User not found" });
 
-      // clear all old sessions
-      user.sessions = [];
+/**
+ * Logs out all previous sessions for a user and creates a fresh session.
+ * Useful for enforcing single-device login.
+ *
+ * @param {Object} req - Express request object containing email and token
+ * @param {Object} res - Express response object to send status and data
+ */
+static forceLogout = async (req, res) => {
+  // -------------------- Destructure request body --------------------
+  const { token, email } = req.body; // 'token' = new JWT token, 'email' = user's email
 
-      // create fresh session
-      user.sessions.push({
-        token,
-        userAgent: req.headers["user-agent"],
-        ip: req.ip,
-        lastActivity: new Date(),
-        expiresAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-      });
-      await user.save();
+  try {
+    // -------------------- Find user by email --------------------
+    const user = await authModel.findOne({ email });
+    if (!user) 
+      return res.status(400).json({ message: "User not found" });
 
-      return res.status(200).json({
-        message: "Previous session terminated. Logged in successfully.",
-        token,
-        user,
-      });
-    } catch (err) {
-      return res.status(500).json({ message: err.message });
-    }
-  };
+    // -------------------- Clear all old sessions --------------------
+    user.sessions = []; // remove all previous sessions to enforce single device
 
-// Send logout email
-  // ---------------- Logout Email Notification ----------------
-  static async sendLogoutEmail(req, res) {
-    const { email, name } = req.body;
+    // -------------------- Create a fresh session --------------------
+    user.sessions.push({
+      token,                                       // JWT for new session
+      userAgent: req.headers["user-agent"],       // Device/browser info
+      ip: req.ip,                                 // Login IP address
+      lastActivity: new Date(),                   // Timestamp of current activity
+      expiresAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // Session expiry: 2 days
+    });
 
-    if (!email) return res.status(400).json({ message: "Email is required" });
+    // -------------------- Save updated user --------------------
+    await user.save();
 
-    try {
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS,
-        },
-      });
+    // -------------------- Send response --------------------
+    return res.status(200).json({
+      message: "Previous session terminated. Logged in successfully.",
+      token, // return newly generated JWT
+      user,  // return user details including updated session
+    });
 
-      const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: email,
-        subject: "Logout Successful",
-        text: `Hello ${name || "User"},\nYour account has been logged out successfully.`,
-      };
-
-      await transporter.sendMail(mailOptions);
-      console.log("✅ Logout email sent successfully:", email);
-
-      return res.status(200).json({ success: true, message: "Logout email sent" });
-    } catch (error) {
-      console.error("❌ Error sending logout email:", error);
-      return res.status(500).json({ success: false, message: "Failed to send email" });
-    }
+  } catch (err) {
+    // -------------------- Error handling --------------------
+    return res.status(500).json({ message: err.message });
   }
+};
 
-  // -------------------- Check Session Middleware --------------------
-  static checkSession = async (req, res, next) => {
-    try {
-      const token = req.headers["authorization"]?.split(" ")[1];
-      if (!token) return res.status(401).json({ message: "Unauthorized" });
 
-      const decoded = jwt.verify(token, "amarjeetKumar");
-      const user = await authModel.findById(decoded.userID);
-      if (!user) return res.status(401).json({ message: "User not found" });
+// -------------------- Logout Email Notification --------------------
 
-      const sessionIndex = user.sessions.findIndex(sess => sess.token === token);
-      if (sessionIndex === -1) return res.status(401).json({ message: "Session expired" });
+/**
+ * Sends a logout notification email to the user.
+ * Useful for informing users about account activity and security.
+ *
+ * @param {Object} req - Express request object containing email and optional name
+ * @param {Object} res - Express response object to send status and result
+ */
+static async sendLogoutEmail(req, res) {
+  // -------------------- Destructure request body --------------------
+  const { email, name } = req.body; // 'email' = recipient email, 'name' = optional user name
 
-      const session = user.sessions[sessionIndex];
-      const inactiveTime = Date.now() - session.lastActivity.getTime();
-      if (inactiveTime > 5 * 60 * 1000) { // 5 minutes
-        user.sessions.splice(sessionIndex, 1);
-        await user.save();
-        return res.status(401).json({ message: "Auto logged out due to inactivity" });
-      }
+  // -------------------- Validate input --------------------
+  if (!email)
+    return res.status(400).json({ message: "Email is required" });
 
-      user.sessions[sessionIndex].lastActivity = new Date();
+  try {
+    // -------------------- Create transporter --------------------
+    const transporter = nodemailer.createTransport({
+      service: "gmail",                 // Using Gmail SMTP
+      auth: {
+        user: process.env.EMAIL_USER,   // Email username from environment variables
+        pass: process.env.EMAIL_PASS,   // Email password/app-specific password
+      },
+    });
+
+    // -------------------- Email content --------------------
+    const mailOptions = {
+      from: process.env.EMAIL_USER,                               // Sender address
+      to: email,                                                  // Recipient address
+      subject: "Logout Successful",                                // Email subject line
+      text: `Hello ${name || "User"},\nYour account has been logged out successfully.`, // Plain text body
+    };
+
+    // -------------------- Send email --------------------
+    await transporter.sendMail(mailOptions);
+    console.log("✅ Logout email sent successfully:", email);
+
+    // -------------------- Return success response --------------------
+    return res.status(200).json({ success: true, message: "Logout email sent" });
+
+  } catch (error) {
+    // -------------------- Error handling --------------------
+    console.error("❌ Error sending logout email:", error);
+    return res.status(500).json({ success: false, message: "Failed to send email" });
+  }
+}
+
+
+// -------------------- Check Session Middleware --------------------
+
+/**
+ * Middleware to validate user session and token.
+ * Ensures the user is authenticated and session is active.
+ *
+ * @param {Object} req - Express request object, expects 'Authorization' header
+ * @param {Object} res - Express response object to send status and message
+ * @param {Function} next - Express next middleware function
+ */
+static checkSession = async (req, res, next) => {
+  try {
+    // -------------------- Extract token from Authorization header --------------------
+    const token = req.headers["authorization"]?.split(" ")[1]; 
+    // Example: "Bearer <token>" => split and get actual token
+    if (!token) return res.status(401).json({ message: "Unauthorized" });
+
+    // -------------------- Verify JWT token --------------------
+    const decoded = jwt.verify(token, "amarjeetKumar"); 
+    // decoded contains payload (e.g., userID)
+
+    // -------------------- Fetch user from DB --------------------
+    const user = await authModel.findById(decoded.userID);
+    if (!user) return res.status(401).json({ message: "User not found" });
+
+    // -------------------- Find current session --------------------
+    const sessionIndex = user.sessions.findIndex(sess => sess.token === token); 
+    // Check if token exists in user's sessions
+    if (sessionIndex === -1) return res.status(401).json({ message: "Session expired" });
+
+    const session = user.sessions[sessionIndex];
+
+    // -------------------- Check session inactivity --------------------
+    const inactiveTime = Date.now() - session.lastActivity.getTime(); 
+    // Time since last activity in milliseconds
+    if (inactiveTime > 5 * 60 * 1000) { // 5 minutes inactivity
+      user.sessions.splice(sessionIndex, 1); // remove expired session
       await user.save();
-
-      req.user = user;
-      req.token = token;
-      next();
-    } catch (err) {
-      return res.status(401).json({ message: "Invalid or expired token" });
+      return res.status(401).json({ message: "Auto logged out due to inactivity" });
     }
-  };
 
-  // -------------------- Logout Current Session --------------------
-  static logoutCurrentSession = async (req, res) => {
-    try {
-      const token = req.headers["authorization"]?.split(" ")[1];
-      if (!token) return res.status(401).json({ message: "Unauthorized" });
+    // -------------------- Update lastActivity timestamp --------------------
+    user.sessions[sessionIndex].lastActivity = new Date(); // reset lastActivity
+    await user.save();
 
-      const user = await authModel.findOne({ "sessions.token": token });
-      if (!user) return res.status(400).json({ message: "Session not found" });
+    // -------------------- Attach user and token to request --------------------
+    req.user = user;   // authenticated user object
+    req.token = token; // current session token
 
-      user.sessions = user.sessions.filter(s => s.token !== token);
-      await user.save();
+    // -------------------- Proceed to next middleware --------------------
+    next();
 
-      return res.status(200).json({ message: "Logged out successfully" });
-    } catch (err) {
-      return res.status(500).json({ message: err.message });
-    }
-  };
+  } catch (err) {
+    // -------------------- Handle invalid or expired token --------------------
+    return res.status(401).json({ message: "Invalid or expired token" });
+  }
+};
+
+
+ // -------------------- Logout Current Session --------------------
+
+/**
+ * Logs out the current user session by removing the token from their active sessions.
+ *
+ * @param {Object} req - Express request object, expects 'Authorization' header
+ * @param {Object} res - Express response object to send status and message
+ */
+static logoutCurrentSession = async (req, res) => {
+  try {
+    // -------------------- Extract token from Authorization header --------------------
+    const token = req.headers["authorization"]?.split(" ")[1]; 
+    // Example: "Bearer <token>" => split and get actual token
+    if (!token) return res.status(401).json({ message: "Unauthorized" });
+
+    // -------------------- Find user who has this session token --------------------
+    const user = await authModel.findOne({ "sessions.token": token }); 
+    // Search user document containing this token in sessions array
+    if (!user) return res.status(400).json({ message: "Session not found" });
+
+    // -------------------- Remove the current session --------------------
+    user.sessions = user.sessions.filter(s => s.token !== token); 
+    // Filter out the session matching the current token
+    await user.save(); // Save updated user sessions to database
+
+    // -------------------- Return success response --------------------
+    return res.status(200).json({ message: "Logged out successfully" });
+
+  } catch (err) {
+    // -------------------- Handle unexpected errors --------------------
+    return res.status(500).json({ message: err.message });
+  }
+};
+
 
   // -------------------- Logout All Sessions --------------------
-  static logoutAllSessions = async (req, res) => {
-    try {
-      const userId = req.user._id;
-      const user = await authModel.findById(userId);
-      if (!user) return res.status(400).json({ message: "User not found" });
 
-      user.sessions = [];
-      await user.save();
+/**
+ * Logs out the user from all active sessions on all devices.
+ *
+ * @param {Object} req - Express request object, expects authenticated user in req.user
+ * @param {Object} res - Express response object to send status and message
+ */
+static logoutAllSessions = async (req, res) => {
+  try {
+    // -------------------- Get authenticated user's ID --------------------
+    const userId = req.user._id; 
+    // req.user is set by authentication middleware (checkIsUserAuthenticated or checkSession)
 
-      return res.status(200).json({ message: "Logged out from all devices" });
-    } catch (err) {
-      return res.status(500).json({ message: err.message });
-    }
-  };
+    // -------------------- Fetch user from database --------------------
+    const user = await authModel.findById(userId);
+    if (!user) return res.status(400).json({ message: "User not found" });
+
+    // -------------------- Clear all sessions --------------------
+    user.sessions = []; 
+    // Removes all active session objects from user's sessions array
+    await user.save(); 
+    // Persist changes to database
+
+    // -------------------- Return success response --------------------
+    return res.status(200).json({ message: "Logged out from all devices" });
+
+  } catch (err) {
+    // -------------------- Handle unexpected errors --------------------
+    return res.status(500).json({ message: err.message });
+  }
+};
+
 
 
   static changePassword = async (req, res) => {
@@ -695,41 +962,59 @@ static sendLogoutEmail = async (req, res) => {
     }
   };
 
-  static saveVerifiedEmail = async (req, res) => {
-    const { token } = req.params;
-    try {
-      if (token) {
-        // token verify
-        const secretKey = "amarjeetGupta";
-        const isEmailVerified = await jwt.verify(token, secretKey);
-        if (isEmailVerified) {
-          const getUser = await authModel.findOne({
-            email: isEmailVerified.email,
-          });
+  // -------------------- Email Verification --------------------
 
-          const saveEmail = await authModel.findByIdAndUpdate(getUser._id, {
-            $set: {
-              isVerified: true,
-            },
-          });
+/**
+ * Verifies the user's email using a token sent via email.
+ *
+ * @param {Object} req - Express request object, expects `token` in req.params
+ * @param {Object} res - Express response object to send status and message
+ */
+static saveVerifiedEmail = async (req, res) => {
+  // Extract token from URL parameters
+  const { token } = req.params;
 
-          if (saveEmail) {
-            return res
-              .status(200)
-              .json({ message: "Email Verification Success" });
-          }
+  try {
+    if (token) {
+      // -------------------- Verify JWT token --------------------
+      const secretKey = "amarjeetGupta"; // Secret key used when generating verification token
+      const isEmailVerified = await jwt.verify(token, secretKey);
+      // isEmailVerified will contain the payload from token (e.g., { email: userEmail })
 
-          //
-        } else {
-          return res.status(400).json({ message: "Link Expired" });
+      if (isEmailVerified) {
+        // -------------------- Find the user by email from token --------------------
+        const getUser = await authModel.findOne({
+          email: isEmailVerified.email,
+        });
+
+        // -------------------- Update user's isVerified field --------------------
+        const saveEmail = await authModel.findByIdAndUpdate(getUser._id, {
+          $set: { isVerified: true }, // mark email as verified
+        });
+
+        if (saveEmail) {
+          return res
+            .status(200)
+            .json({ message: "Email Verification Success" });
         }
+
+        // -------------------- If saving failed --------------------
+        return res.status(500).json({ message: "Failed to verify email" });
+
       } else {
-        return res.status(400).json({ message: "Invalid URL" });
+        // -------------------- Token is invalid or expired --------------------
+        return res.status(400).json({ message: "Link Expired" });
       }
-    } catch (error) {
-      return res.status(400).json({ message: error.message });
+    } else {
+      // -------------------- Token not provided --------------------
+      return res.status(400).json({ message: "Invalid URL" });
     }
-  };
+  } catch (error) {
+    // -------------------- Handle unexpected errors --------------------
+    return res.status(400).json({ message: error.message });
+  }
+};
+
 }
 
 export default authController;

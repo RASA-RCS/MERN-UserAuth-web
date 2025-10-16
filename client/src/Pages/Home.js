@@ -1,8 +1,9 @@
-//  Copyright (c) [2025] [Rasa Consultancy Services]. All rights reserved. 
+//  Copyright (c) [2025] [Rasa Consultancy Services]. All rights reserved.
 //  This software is the confidential and proprietary information of [Rasa Consultancy Services]. 
 //  You shall not disclose such confidential information and shall use it only in accordance 
-//with the terms of the license agreement you entered into with [Rasa Consultancy Services].
-//  For more information, please contact: [Your Company Email/Legal Department Contact] 
+//  with the terms of the license agreement you entered into with [Rasa Consultancy Services].
+//  For more information, please contact: legal@rasaconsultancy.com
+
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "../Services/axiosInterceptor";
@@ -10,9 +11,15 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Cookies from "js-cookie";
 import amarrpic from "../images/istockphoto-1432260067-612x612.jpg";
-import session_exp from "../sound/ui-8-warning-sound-effect-336254.mp3"
+import session_exp from "../sound/ui-8-warning-sound-effect-336254.mp3";
 import audios from "../sound/iphone_16_messege_tone.mp3"; // correct path for sound
 
+// ----- Home Component -----
+/**
+ * Home Component
+ * Handles user session monitoring, logout, and automatic session expiry due to inactivity.
+ * © 2025 Rasa Consultancy Services. Confidential and Proprietary.
+ */
 const Home = () => {
   const navigate = useNavigate();
   const name = Cookies.get("name");
@@ -27,10 +34,14 @@ const Home = () => {
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [logoutCountdown, setLogoutCountdown] = useState(10);
 
-  // ---------- Play Logout Sound ----------
+  /**
+   * playLogoutSound()
+   * Plays a logout notification sound when session ends or user logs out.
+   * © 2025 Rasa Consultancy Services. Confidential and Proprietary.
+   */
   const playLogoutSound = () => {
     try {
-      const logoutSound = new Audio(audios); //  use imported audio
+      const logoutSound = new Audio(audios);
       logoutSound.volume = 0.8;
       logoutSound.play().catch(() => {
         console.warn("⚠️ Logout sound playback blocked by browser until user interaction.");
@@ -40,28 +51,38 @@ const Home = () => {
     }
   };
 
-
-
-  // ---------- Play Logout Sound ----------
+  /**
+   * playoutSession()
+   * Plays a warning sound when session is about to expire.
+   * © 2025 Rasa Consultancy Services. Confidential and Proprietary.
+   */
   const playoutSession = () => {
     try {
-      const sessionWarn = new Audio(session_exp); //  use imported audio
+      const sessionWarn = new Audio(session_exp);
       sessionWarn.volume = 0.8;
       sessionWarn.play().catch(() => {
-        console.warn("⚠️ Logout sound playback blocked by browser until user interaction.");
+        console.warn("⚠️ Session warning sound playback blocked by browser.");
       });
     } catch (err) {
       console.warn("⚠️ Audio play error:", err.message);
     }
   };
 
+  /**
+   * initiateLogout()
+   * Displays a logout confirmation dialog with countdown timer.
+   * © 2025 Rasa Consultancy Services. Confidential and Proprietary.
+   */
   const initiateLogout = () => {
-    // playLogoutSound(); //  triggered by user click → browser allows it
     setShowLogoutDialog(true);
     setLogoutCountdown(10);
   };
 
-  // ---------- Logout Countdown ----------
+  /**
+   * Logout Countdown Effect
+   * Handles automatic logout after countdown ends.
+   * © 2025 Rasa Consultancy Services. Confidential and Proprietary.
+   */
   useEffect(() => {
     if (!showLogoutDialog) return;
     const interval = setInterval(() => {
@@ -78,26 +99,26 @@ const Home = () => {
     return () => clearInterval(interval);
   }, [showLogoutDialog]);
 
-  // ---------- Logout Function ----------
+  /**
+   * handleLogout()
+   * Handles user logout: clears cookies, sends logout email, redirects to login page.
+   * © 2025 Rasa Consultancy Services. Confidential and Proprietary.
+   */
   const handleLogout = async () => {
     try {
       setShowLogoutDialog(false);
-      toast.success("Logout sucessfully.....");
+      toast.success("Logout successfully.....");
 
-      //  Send logout email first
       if (email) {
         console.log("📩 Sending logout email for:", email);
         await axios.post("/api/auth/send-logout-email", { email, name });
         console.log("✅ Logout email sent successfully");
       }
 
-      // Play sound after email sent
       playLogoutSound();
 
-      //  Remove cookies and navigate
       Cookies.remove("token");
       Cookies.remove("name");
-      // Cookies.remove("rememberData");
       Cookies.remove("sessionExpiry");
 
       toast.success("Logout successful!");
@@ -106,16 +127,18 @@ const Home = () => {
       console.error("❌ Error sending logout email:", error.message);
       toast.error("Logout email failed, but you are logged out.");
 
-      // still logout even if email fails
       Cookies.remove("token");
       Cookies.remove("name");
-     
       Cookies.remove("sessionExpiry");
       navigate("/login");
     }
   };
 
-  // ---------- Session Expire ----------
+  /**
+   * handleSessionExpire()
+   * Logs the user out when session expires and redirects to session-expired page.
+   * © 2025 Rasa Consultancy Services. Confidential and Proprietary.
+   */
   const handleSessionExpire = () => {
     Cookies.remove("token");
     Cookies.remove("name");
@@ -123,7 +146,11 @@ const Home = () => {
     navigate("/session-expired");
   };
 
-  // ---------- Reset Inactivity Timer ----------
+  /**
+   * resetTimer()
+   * Resets inactivity timer on user activity.
+   * © 2025 Rasa Consultancy Services. Confidential and Proprietary.
+   */
   const resetTimer = () => {
     if (logoutTimer.current) clearTimeout(logoutTimer.current);
 
@@ -139,6 +166,11 @@ const Home = () => {
     toastShown.current = false;
   };
 
+  /**
+   * Inactivity Timer Effect
+   * Listens for user activity and resets timer to prevent auto-logout.
+   * © 2025 Rasa Consultancy Services. Confidential and Proprietary.
+   */
   useEffect(() => {
     const events = ["mousemove", "keydown", "scroll", "click"];
     events.forEach((e) => window.addEventListener(e, resetTimer));
@@ -149,7 +181,11 @@ const Home = () => {
     };
   }, []);
 
-  // ---------- Session Countdown ----------
+  /**
+   * Session Countdown Effect
+   * Monitors session expiry and warns the user before it happens.
+   * © 2025 Rasa Consultancy Services. Confidential and Proprietary.
+   */
   useEffect(() => {
     const interval = setInterval(() => {
       const expiryTime = Number(Cookies.get("sessionExpiry"));
@@ -173,6 +209,11 @@ const Home = () => {
     return () => clearInterval(interval);
   }, []);
 
+  /**
+   * formatTime()
+   * Converts milliseconds into minutes and seconds for session countdown.
+   * © 2025 Rasa Consultancy Services. Confidential and Proprietary.
+   */
   const formatTime = (ms) => {
     const totalSeconds = Math.floor(ms / 1000);
     const minutes = Math.floor(totalSeconds / 60);
@@ -180,7 +221,11 @@ const Home = () => {
     return `${minutes}m ${seconds}s`;
   };
 
-  // ---------- Redirect if Not Logged In ----------
+  /**
+   * Redirect Check Effect
+   * Redirects user to login page if no token is found.
+   * © 2025 Rasa Consultancy Services. Confidential and Proprietary.
+   */
   useEffect(() => {
     if (!token) {
       toast.error("Please login first!");
@@ -188,6 +233,7 @@ const Home = () => {
     }
   }, [token, navigate]);
 
+  // ---------- UI Rendering ----------
   return (
     <section className="vh-100" style={{ backgroundColor: "#9e9093ff" }}>
       <ToastContainer />

@@ -1,57 +1,62 @@
+// ---------------- COPYRIGHT & CONFIDENTIALITY ----------------
 //  Copyright (c) [2025] [Rasa Consultancy Services]. All rights reserved. 
 //  This software is the confidential and proprietary information of [Rasa Consultancy Services]. 
 //  You shall not disclose such confidential information and shall use it only in accordance 
-//with the terms of the license agreement you entered into with [Rasa Consultancy Services].
+//  with the license agreement you entered into with [Rasa Consultancy Services].
 //  For more information, please contact: [Your Company Email/Legal Department Contact] 
+
 import React, { useState, useEffect } from "react";
-import axios from "../Services/axiosInterceptor";
-import "../css/signIn.css";
-import Captcha from "./Captcha";
-import Cookies from "js-cookie";
-import { useNavigate } from "react-router-dom";
-import { auth, googleProvider } from "../firebaseConfig/FireConFig";
+import axios from "../Services/axiosInterceptor"; // Axios instance with interceptors
+import "../css/signIn.css"; // CSS styles for login form
+import Captcha from "./Captcha"; // Custom CAPTCHA component
+import Cookies from "js-cookie"; // For handling cookies (token, rememberMe, etc.)
+import { useNavigate } from "react-router-dom"; // For page navigation
+import { auth, googleProvider } from "../firebaseConfig/FireConFig"; // Firebase auth
 import {
   FacebookAuthProvider,
   signInWithPopup,
   fetchSignInMethodsForEmail,
-} from "firebase/auth";
-import { ToastContainer, toast } from "react-toastify";
+} from "firebase/auth"; // Firebase social login utilities
+import { ToastContainer, toast } from "react-toastify"; // Toast notifications
 import "react-toastify/dist/ReactToastify.css";
-import refreshIcon from "../images/refresh-removebg-preview.png";
-import emailicon from '../images/tl.webp';
-import pwd from "../images/password-76.png";
-import audios from "../sound/success-340660.mp3";
+import refreshIcon from "../images/refresh-removebg-preview.png"; // CAPTCHA refresh icon
+import emailicon from '../images/tl.webp'; // Email icon
+import pwd from "../images/password-76.png"; // Password icon
+import audios from "../sound/success-340660.mp3"; // Success audio
 
-// Utility functions
+// ---------------- UTILITY FUNCTIONS ----------------
+// Base64 encode/decode for storing password in cookies
 const encode = (str) => btoa(str);
 const decode = (str) => atob(str);
 
+// ---------------- MAIN COMPONENT ----------------
 const Login = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // For redirecting pages
 
-  // ---------------- Form State ----------------
-  const [input, setInput] = useState({ email: "", password: "" });
-  const [passwordVisible, setPasswordVisible] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
+  // ---------------- FORM STATE ----------------
+  const [input, setInput] = useState({ email: "", password: "" }); // Stores email & password
+  const [passwordVisible, setPasswordVisible] = useState(false); // Toggle password visibility
+  const [rememberMe, setRememberMe] = useState(false); // Remember Me checkbox state
 
-  // ---------------- OTP State ----------------
-  const [showOtpForm, setShowOtpForm] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [userEmail, setUserEmail] = useState("");
-  const [timer, setTimer] = useState(180);
-  const [canResend, setCanResend] = useState(false);
+  // ---------------- OTP STATE ----------------
+  const [showOtpForm, setShowOtpForm] = useState(false); // Toggle OTP form
+  const [otp, setOtp] = useState(""); // OTP input
+  const [userEmail, setUserEmail] = useState(""); // Email for OTP verification
+  const [timer, setTimer] = useState(180); // OTP countdown in seconds
+  const [canResend, setCanResend] = useState(false); // Enable "Resend OTP" button
 
-  // ---------------- Lockout State ----------------
-  const [lockTimer, setLockTimer] = useState(0);
-  const [failedAttempts, setFailedAttempts] = useState(0);
-  const LOCK_DURATION = 15 * 60; // 15 minutes
+  // ---------------- LOCKOUT STATE ----------------
+  const [lockTimer, setLockTimer] = useState(0); // Lock countdown timer
+  const [failedAttempts, setFailedAttempts] = useState(0); // Track login attempts
+  const LOCK_DURATION = 15 * 60; // 15 minutes lock duration
 
-  // ---------------- Device Enforcement ----------------
-  const [showDevicePrompt, setShowDevicePrompt] = useState(false);
-  const [pendingToken, setPendingToken] = useState(null);
-  const [pendingEmail, setPendingEmail] = useState(null);
+  // ---------------- DEVICE ENFORCEMENT ----------------
+  const [showDevicePrompt, setShowDevicePrompt] = useState(false); // Show device login prompt
+  const [pendingToken, setPendingToken] = useState(null); // Token for forced login
+  const [pendingEmail, setPendingEmail] = useState(null); // Email for forced login
 
-  // ---------------- Random CAPTCHA ----------------
+
+  // ---------------- CAPTCHA STATE ----------------
   const generateRandomCode = (length = 5) => {
     const chars =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -63,7 +68,7 @@ const Login = () => {
   };
 
 
-//-----Random OTP generate------------
+// ---------------- OTP ANIMATION STATE ----------------
   const [randomCode, setRandomCode] = useState(generateRandomCode());
   const [userCode, setUserCode] = useState("");
 
@@ -91,7 +96,7 @@ const Login = () => {
 }, []);
 
 
-  // ---------- Play Logout Sound ----------
+ // ---------------- PLAY SUCCESS AUDIO ----------------
   const veriFyOtpSound = () => {
     try {
       const OutSound = new Audio(audios); // use imported audio
@@ -136,6 +141,8 @@ const Login = () => {
     }
     return () => clearInterval(lockInterval);
   }, [lockTimer]);
+
+    // ---------------- FORMAT TIMER ----------------
 
   const formatTime = (sec) => {
     const m = Math.floor(sec / 60).toString().padStart(2, "0");

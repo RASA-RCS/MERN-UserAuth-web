@@ -55,8 +55,6 @@ class authController {
  * Validates required fields, hashes password, generates verification token,
  * sends email verification link, and saves user to database.
  *
- * @param {Object} req - Express request object containing user data in req.body
- * @param {Object} res - Express response object to send back status and messages
  */
 static userRegistration = async (req, res) => {
   // Destructure incoming user data from request body
@@ -259,9 +257,6 @@ static facebookLogin = async (req, res) => {
  * If user exists, updates Google ID and last login method.
  * If user does not exist, creates a new user with Google credentials.
  * Generates JWT token and manages sessions.
- *
- * @param {Object} req - Express request object containing uid, email, name, photoURL
- * @param {Object} res - Express response object to send back status and data
  */
 static googleLogin = async (req, res) => {
   // -------------------- Destructure request body --------------------
@@ -342,9 +337,7 @@ static googleLogin = async (req, res) => {
 /**
  * Handles email + password login (Step 1).
  * Validates user credentials, checks account lock, generates OTP, and sends it via email.
- *
- * @param {Object} req - Express request object containing email and password
- * @param {Object} res - Express response object to send back status and data
+
  */
 static userLogin = async (req, res) => {
   // -------------------- Destructure request body --------------------
@@ -423,9 +416,7 @@ static userLogin = async (req, res) => {
 /**
  * Handles OTP verification for email login (Step 2).
  * Validates OTP, clears it upon success, creates JWT, and manages sessions.
- *
- * @param {Object} req - Express request object containing email and otp
- * @param {Object} res - Express response object to send back status and data
+
  */
 static verifyLoginOtp = async (req, res) => {
   // -------------------- Destructure request body --------------------
@@ -505,9 +496,7 @@ static verifyLoginOtp = async (req, res) => {
 /**
  * Logs out all previous sessions for a user and creates a fresh session.
  * Useful for enforcing single-device login.
- *
- * @param {Object} req - Express request object containing email and token
- * @param {Object} res - Express response object to send status and data
+
  */
 static forceLogout = async (req, res) => {
   // -------------------- Destructure request body --------------------
@@ -553,9 +542,7 @@ static forceLogout = async (req, res) => {
 /**
  * Sends a logout notification email to the user.
  * Useful for informing users about account activity and security.
- *
- * @param {Object} req - Express request object containing email and optional name
- * @param {Object} res - Express response object to send status and result
+ 
  */
 static async sendLogoutEmail(req, res) {
   // -------------------- Destructure request body --------------------
@@ -603,9 +590,6 @@ static async sendLogoutEmail(req, res) {
 /**
  * Middleware to validate user session and token.
  * Ensures the user is authenticated and session is active.
- *
- * @param {Object} req - Express request object, expects 'Authorization' header
- * @param {Object} res - Express response object to send status and message
  * @param {Function} next - Express next middleware function
  */
 static checkSession = async (req, res, next) => {
@@ -661,9 +645,7 @@ static checkSession = async (req, res, next) => {
 
 /**
  * Logs out the current user session by removing the token from their active sessions.
- *
- * @param {Object} req - Express request object, expects 'Authorization' header
- * @param {Object} res - Express response object to send status and message
+ 
  */
 static logoutCurrentSession = async (req, res) => {
   try {

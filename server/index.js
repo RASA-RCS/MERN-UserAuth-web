@@ -20,6 +20,7 @@ dotenv.config(); // Access process.env variables from .env file
 // -------------------- Configuration --------------------
 const PORT = process.env.PORT || 9000; // Set port from env or default 9000
 
+
 // -------------------- Database Connection --------------------
 connectDB(); // Connect to MongoDB
 

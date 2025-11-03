@@ -20,6 +20,7 @@ import jwt from "jsonwebtoken";
 import { sendEmailtoUser } from "../config/EmailTemplate.js";
 
 
+
 // ---------------- Helper: Send OTP ----------------
 const sendOtpEmail = async (email, otp) => {
   // Create a transporter object using Gmail SMTP
@@ -138,6 +139,7 @@ static sendLogoutEmail = async (req, res) => {
     // Using nodemailer to send email
     const transporter = nodemailer.createTransport({
       service: "gmail", // Email service provider
+      
       auth: {
         user: process.env.EMAIL,          // Sender email (from environment variable)
         pass: process.env.EMAIL_PASSWORD, // Email password (from environment variable)
@@ -349,6 +351,8 @@ static userLogin = async (req, res) => {
       return res.status(400).json({ message: "All fields are required" });
 
     // -------------------- Find user by email --------------------
+
+    
     const user = await authModel.findOne({ email });
     if (!user) 
       return res.status(400).json({ message: "User not registered!" });
